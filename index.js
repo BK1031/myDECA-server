@@ -170,7 +170,11 @@ db.child("dataExport").on("child_added", function(snapshot, prevChildKey) {
             var user = data.val();
 
             dataExport += "USER INFO\n-------------\n";
-            dataExport += JSON.stringify(user, null, 4) + "\n";
+            dataExport += "userID: " + data.key + "\n";
+            var userInfo = Object.keys(user);
+            for (var i = 0; i < userInfo.length; i++) {
+                dataExport += userInfo[i] + ": " + user[userInfo[i]] + "\n";
+            }
             
             dataExport += "\n\nCHAT INFO\n-------------\n";
             db.child("chapters").child(user.chapterID).child("chat").once('value', (chat) => {
@@ -179,14 +183,16 @@ db.child("dataExport").on("child_added", function(snapshot, prevChildKey) {
                     if (chats[i] != "Developer" || user.roles.includes("Developer")) {
                         db.child("chapters").child(user.chapterID).child("chat").child(chats[i]).once("value", (chat2) => {
                             if (chat2.val() != null) {
-                                dataExport += "[" + chat2.val()["name"] + " CHAT]\n";
+                                dataExport += "\n[" + chat2.val()["name"] + " CHAT]\n\n";
                                 var keys = Object.keys(chat2.val());
                                 for (var i = 0; i < keys.length; i++) {
-                                    if (chat2.val()[keys[i]]["author"] == data.key) {
-                                        db.child("users").child(chat2.val()[keys[i]]["author"]).once("value", (author) => {
-                                            var author = author.val();
-                                            dataExport += author.firstName + " " + author.lastName + ' (' + chat2.val()[keys[i]]["date"] + ') ' + chat2.val()[keys[i]]["message"] + "\n";
-                                        });
+                                    if (keys[i] != "name") {
+                                        if (chat2.val()[keys[i]]["author"] == data.key || user.roles.includes("Developer")) {
+                                            db.child("users").child(chat2.val()[keys[i]]["author"]).once("value", (author) => {
+                                                var author = author.val();
+                                                dataExport += author.firstName + " " + author.lastName + ' (' + chat2.val()[keys[i]]["date"] + ') ' + chat2.val()[keys[i]]["message"] + "\n";
+                                            });
+                                        }
                                     }
                                 }
                             }
@@ -196,16 +202,20 @@ db.child("dataExport").on("child_added", function(snapshot, prevChildKey) {
             });
 
             if (user.roles.includes("Advisor") || user.roles.includes("Developer")) {
-                db.child("chapters").child(user.chapterID).once('value', (chapter) => {
-                    dataExport += "\n\nCHAPTER INFO\n-------------\n";
-                    dataExport += JSON.stringify(chapter.val(), null, 4) + "\n";
-                });
+                // db.child("chapters").child(user.chapterID).once('value', (chapter) => {
+                //     dataExport += "\n\nCHAPTER INFO\n-------------\n";
+                //     dataExport += JSON.stringify(chapter.val(), null, 4) + "\n";
+                // });
                 dataExport += "\n\nCHAPTER MEMBERS\n-------------\n";
                 db.child("users").once('value', (data) => {
                     var keys = Object.keys(data.val());
                     for (var i = 0; i < keys.length; i++) {
                         if (data.val()[keys[i]]["chapterID"] == user.chapterID) {
-                            dataExport += JSON.stringify(data.val()[keys[i]], null, 4) + "\n";
+                            dataExport += "\nuserID: " + keys[i] + "\n";
+                            var userInfo = Object.keys(data.val()[keys[i]]);
+                            for (var j = 0; j < userInfo.length; j++) {
+                                dataExport += userInfo[j] + ": " + data.val()[keys[i]][userInfo[j]] + "\n";
+                            }
                         }
                     }
                 });
